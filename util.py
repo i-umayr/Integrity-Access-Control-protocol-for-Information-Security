@@ -58,7 +58,7 @@ def verify_integrity(data, public_key, encrypted_data, symmetric_key, data_hash=
             print("Calculated Hash:", calculated_hash)
             print("Data Hash:", data_hash, "\n")
 
-    return True, "-----------------------------------------Data integrity verified successfully----------------------------------------- \n"
+    return True, "Verified"  # Shorter success message
 
 def compromise_blockchain_data_integrity(blockchain, transaction_index, new_data):
 

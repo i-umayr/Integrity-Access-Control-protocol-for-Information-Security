@@ -173,33 +173,21 @@ class ModernGUI:
             encrypted_data = sih.encrypt_data(self.symmetric_key)
             signature = sih.generate_signature(self.private_key)
 
-            # Verify data integrity before storing
-            verification_result, message = verify_integrity(
-                data, 
-                self.public_key, 
-                encrypted_data, 
-                self.symmetric_key, 
-                data_hash, 
-                signature
-            )
+            # Ensure all binary data is stored as hex strings
+            transaction_data = {
+                'data': data,
+                'data hash': data_hash,
+                'encrypted data': encrypted_data.hex() if isinstance(encrypted_data, bytes) else encrypted_data,
+                'symmetric key': self.symmetric_key.hex() if isinstance(self.symmetric_key, bytes) else self.symmetric_key,
+                'signature': signature.hex() if isinstance(signature, bytes) else signature
+            }
+            
+            self.blockchain.new_transaction(transaction_data)
+            previous_hash = None if not self.blockchain.chain else self.blockchain.hash(self.blockchain.chain[-1])
+            self.blockchain.new_block(previous_hash)
 
-            if verification_result:
-                transaction_data = {
-                    'data': data,
-                    'data hash': data_hash,
-                    'encrypted data': encrypted_data,
-                    'symmetric key': self.symmetric_key.hex(),
-                    'verification_status': 'VERIFIED'
-                }
-                
-                self.blockchain.new_transaction(transaction_data)
-                previous_hash = None if not self.blockchain.chain else self.blockchain.hash(self.blockchain.chain[-1])
-                self.blockchain.new_block(previous_hash)
-
-                self.show_status("✓ Data verified and stored successfully!", "success")
-                self.data_entry.delete(1.0, tk.END)
-            else:
-                self.show_status(f"✗ Verification failed: {message}", "error")
+            self.show_status("Data stored successfully!", "success")
+            self.data_entry.delete(1.0, tk.END)
             
         except Exception as e:
             self.show_status(f"Error: {str(e)}", "error")
@@ -213,6 +201,38 @@ class ModernGUI:
             }.get(status_type, TEXT_COLOR)
             
             self.status_label.config(text=message, foreground=color)
+
+    def verify_block_data(self, transaction):
+        """
+        Verify the integrity of a block's data
+        """
+        try:
+            # Helper function to convert to bytes
+            def ensure_bytes(data):
+                if isinstance(data, str):
+                    return bytes.fromhex(data)
+                return data if isinstance(data, bytes) else None
+
+            # Convert data to bytes safely
+            encrypted_data = ensure_bytes(transaction.get('encrypted data'))
+            symmetric_key = ensure_bytes(transaction.get('symmetric key'))
+            signature = ensure_bytes(transaction.get('signature'))
+
+            # Check if any required data is missing or invalid
+            if not all([encrypted_data, symmetric_key]):
+                return False, "Missing or invalid data"
+
+            verification_result, message = verify_integrity(
+                transaction['data'],
+                self.public_key,
+                encrypted_data,
+                symmetric_key,
+                transaction['data hash'],
+                signature
+            )
+            return verification_result, message
+        except Exception as e:
+            return False, f"Verification error: {str(e)}"
 
     def show_records(self):
         records_window = tk.Toplevel(self.current_window)
@@ -238,6 +258,11 @@ class ModernGUI:
                              pady=10)
         records_text.pack(fill=tk.BOTH, expand=True)
 
+        # Create tags for different verification statuses
+        records_text.tag_configure("verified", foreground="#2ecc71")  # Green
+        records_text.tag_configure("unverified", foreground="#e74c3c")  # Red
+        records_text.tag_configure("heading", font=('Courier', 12, 'bold'))
+
         scrollbar = ttk.Scrollbar(content_frame, 
                                 orient=tk.VERTICAL, 
                                 command=records_text.yview)
@@ -248,8 +273,19 @@ class ModernGUI:
             for block in self.blockchain.chain:
                 records_text.insert(tk.END, f"Block #{block['index']}\n", "heading")
                 records_text.insert(tk.END, "-" * 40 + "\n")
+                
                 for transaction in block['transactions']:
+                    # Verify the data
+                    is_verified, message = self.verify_block_data(transaction)
+                    
+                    # Display data with verification status
+                    status_tag = "verified" if is_verified else "unverified"
+                    status_symbol = "✓" if is_verified else "✗"
+                    
                     records_text.insert(tk.END, f"Data: {transaction['data']}\n")
+                    records_text.insert(tk.END, 
+                                     f"Status: {status_symbol} {message}\n", 
+                                     status_tag)
                 records_text.insert(tk.END, "\n")
         else:
             records_text.insert(tk.END, "No records found in the blockchain.")

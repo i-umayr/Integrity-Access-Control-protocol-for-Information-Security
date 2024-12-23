@@ -5,7 +5,7 @@ class Blockchain:
     def __init__(self):
         self.chain = []
         self.current_transactions = []
-        self.load_chain()  # Load the blockchain from file when creating a new instance
+        self.load_chain()
 
     def load_chain(self):
         try:
@@ -33,26 +33,32 @@ class Blockchain:
 
     def new_block(self, previous_hash=None):
         """
-        Create a new block in the blockchain.
+        Create a new block in the blockchain and clear current transactions.
         """
-        index = len(self.chain) + 1  # Increment index properly
+        index = len(self.chain) + 1
         if previous_hash is None and len(self.chain) > 0:
-            previous_hash = self.hash(self.chain[-1])  # Use the hash of the last block as previous hash
+            previous_hash = self.hash(self.chain[-1])
+
         block = {
             'index': index,
             'transactions': self.current_transactions,
             'previous_hash': previous_hash,
         }
 
+        # Clear current transactions AFTER adding them to the block
+        self.current_transactions = []  # Reset the transaction list
+        
         self.chain.append(block)
-        self.save_chain()  # Save the blockchain after adding a new block
+        self.save_chain()
         return block
-
+    
     def new_transaction(self, data):
         """
         Add a new transaction to the blockchain.
         """
         self.current_transactions.append(data)
+
+
 
     def hash(self, block):
         """
