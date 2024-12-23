@@ -249,9 +249,7 @@ class ModernGUI:
                 records_text.insert(tk.END, f"Block #{block['index']}\n", "heading")
                 records_text.insert(tk.END, "-" * 40 + "\n")
                 for transaction in block['transactions']:
-                    verification_status = transaction.get('verification_status', 'UNKNOWN')
                     records_text.insert(tk.END, f"Data: {transaction['data']}\n")
-                    records_text.insert(tk.END, f"Verification Status: {verification_status}\n")
                 records_text.insert(tk.END, "\n")
         else:
             records_text.insert(tk.END, "No records found in the blockchain.")

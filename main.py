@@ -175,7 +175,7 @@ print("`Compromising the integrity of hash function by generating a collision (B
 hash_dict = {}
 num_attempts = 0
  
-while True:
+while (num_attempts<=10000):
     num_attempts += 1
     random_string = generate_random_string(10)
     fake_sih = SIH(random_string)
@@ -190,3 +190,4 @@ while True:
         break
  
     hash_dict[hash_value] = random_string
+print(f"Unsuccessful after {num_attempts} attempts!")
