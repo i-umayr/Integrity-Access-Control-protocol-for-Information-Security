@@ -28,11 +28,9 @@ class CustomDialog(tk.Toplevel):
         self.configure(bg=BG_COLOR)
         self.resizable(False, False)
         
-        # Center the dialog
         self.transient(parent)
         self.grab_set()
         
-        # Create widgets
         frame = ttk.Frame(self, padding="20")
         frame.pack(fill=tk.BOTH, expand=True)
         
@@ -77,7 +75,6 @@ class ModernGUI:
         self.symmetric_key = os.urandom(32)
 
     def create_styles(self):
-        # Create custom style
         self.style = ttk.Style()
         self.style.configure('Custom.TButton',
                            padding=10,
@@ -176,21 +173,33 @@ class ModernGUI:
             encrypted_data = sih.encrypt_data(self.symmetric_key)
             signature = sih.generate_signature(self.private_key)
 
-            transaction_data = {
-                'data': data,
-                'data hash': data_hash,
-                'encrypted data': encrypted_data,
-                'symmetric key': self.symmetric_key.hex(),
-            }
-            
-            self.blockchain.new_transaction(transaction_data)
-            previous_hash = None if not self.blockchain.chain else self.blockchain.hash(self.blockchain.chain[-1])
-            self.blockchain.new_block(previous_hash)
+            # Verify data integrity before storing
+            verification_result, message = verify_integrity(
+                data, 
+                self.public_key, 
+                encrypted_data, 
+                self.symmetric_key, 
+                data_hash, 
+                signature
+            )
 
-            self.show_status("Data successfully stored in blockchain!", "success")
-            
-            # Clear the input field
-            self.data_entry.delete(1.0, tk.END)
+            if verification_result:
+                transaction_data = {
+                    'data': data,
+                    'data hash': data_hash,
+                    'encrypted data': encrypted_data,
+                    'symmetric key': self.symmetric_key.hex(),
+                    'verification_status': 'VERIFIED'
+                }
+                
+                self.blockchain.new_transaction(transaction_data)
+                previous_hash = None if not self.blockchain.chain else self.blockchain.hash(self.blockchain.chain[-1])
+                self.blockchain.new_block(previous_hash)
+
+                self.show_status("✓ Data verified and stored successfully!", "success")
+                self.data_entry.delete(1.0, tk.END)
+            else:
+                self.show_status(f"✗ Verification failed: {message}", "error")
             
         except Exception as e:
             self.show_status(f"Error: {str(e)}", "error")
@@ -211,18 +220,15 @@ class ModernGUI:
         records_window.geometry("800x600")
         records_window.configure(bg=BG_COLOR)
 
-        # Title
         title_frame = ttk.Frame(records_window, padding="20 20 20 10")
         title_frame.pack(fill=tk.X)
         ttk.Label(title_frame, 
                  text="Blockchain Records", 
                  style='Title.TLabel').pack()
 
-        # Records content
         content_frame = ttk.Frame(records_window, padding="20")
         content_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Create Text widget with custom font and colors
         records_text = tk.Text(content_frame,
                              font=('Courier', 10),
                              bg=BG_COLOR,
@@ -232,7 +238,6 @@ class ModernGUI:
                              pady=10)
         records_text.pack(fill=tk.BOTH, expand=True)
 
-        # Add scrollbar
         scrollbar = ttk.Scrollbar(content_frame, 
                                 orient=tk.VERTICAL, 
                                 command=records_text.yview)
@@ -244,12 +249,14 @@ class ModernGUI:
                 records_text.insert(tk.END, f"Block #{block['index']}\n", "heading")
                 records_text.insert(tk.END, "-" * 40 + "\n")
                 for transaction in block['transactions']:
+                    verification_status = transaction.get('verification_status', 'UNKNOWN')
                     records_text.insert(tk.END, f"Data: {transaction['data']}\n")
+                    records_text.insert(tk.END, f"Verification Status: {verification_status}\n")
                 records_text.insert(tk.END, "\n")
         else:
             records_text.insert(tk.END, "No records found in the blockchain.")
 
-        records_text.configure(state='disabled')  # Make read-only
+        records_text.configure(state='disabled')
 
     def create_main_gui(self, user_role):
         self.current_window = tk.Tk()
@@ -257,11 +264,9 @@ class ModernGUI:
         self.current_window.geometry("800x600")
         self.current_window.configure(bg=BG_COLOR)
 
-        # Create main container
         main_frame = ttk.Frame(self.current_window, padding="20")
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Title
         title_frame = ttk.Frame(main_frame)
         title_frame.pack(fill=tk.X, pady=(0, 20))
         ttk.Label(title_frame, 
@@ -269,7 +274,6 @@ class ModernGUI:
                  style='Title.TLabel').pack()
 
         if user_role == "admin":
-            # Data Entry Section
             data_frame = ttk.LabelFrame(main_frame, text="Data Entry", padding="10")
             data_frame.pack(fill=tk.X, pady=10)
 
@@ -288,13 +292,11 @@ class ModernGUI:
                       style='Custom.TButton',
                       command=self.execute_protocol).pack(side=tk.LEFT, padx=5)
 
-            # Status Label
             self.status_label = ttk.Label(data_frame, 
                                         text="Ready", 
                                         style='Subtitle.TLabel')
             self.status_label.pack(pady=5)
 
-        # Records Button (available to all users)
         ttk.Button(main_frame, 
                   text="View Blockchain Records",
                   style='Custom.TButton',
@@ -308,17 +310,14 @@ class ModernGUI:
         self.current_window.geometry("400x500")
         self.current_window.configure(bg=BG_COLOR)
 
-        # Main container
         main_frame = ttk.Frame(self.current_window, padding="40")
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Title
         ttk.Label(main_frame, 
                  text="Welcome to\nBlockchain Protocol", 
                  style='Title.TLabel',
                  justify='center').pack(pady=(0, 40))
 
-        # Buttons Frame
         buttons_frame = ttk.Frame(main_frame)
         buttons_frame.pack(fill=tk.X, pady=20)
 
