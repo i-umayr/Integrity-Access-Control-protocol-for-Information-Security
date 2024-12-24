@@ -301,11 +301,24 @@ class ModernGUI:
         main_frame = ttk.Frame(self.current_window, padding="20")
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        title_frame = ttk.Frame(main_frame)
-        title_frame.pack(fill=tk.X, pady=(0, 20))
-        ttk.Label(title_frame, 
-                 text=f"Blockchain Protocol Interface - {user_role.capitalize()}", 
-                 style='Title.TLabel').pack()
+        # Create top frame for title and logout button
+        top_frame = ttk.Frame(main_frame)
+        top_frame.pack(fill=tk.X, pady=(0, 20))
+        
+        # Add title to the left
+        ttk.Label(top_frame, 
+                text=f"Blockchain Protocol Interface - {user_role.capitalize()}", 
+                style='Title.TLabel').pack(side=tk.LEFT)
+
+        # Add logout button to the right
+        def logout():
+            self.current_window.destroy()
+            self.show_auth_screen()
+
+        ttk.Button(top_frame,
+                text="Logout",
+                style='Custom.TButton',
+                command=logout).pack(side=tk.RIGHT)
 
         if user_role == "admin":
             data_frame = ttk.LabelFrame(main_frame, text="Data Entry", padding="10")
@@ -322,9 +335,9 @@ class ModernGUI:
             btn_frame.pack(fill=tk.X, pady=5)
 
             ttk.Button(btn_frame, 
-                      text="Store Data", 
-                      style='Custom.TButton',
-                      command=self.execute_protocol).pack(side=tk.LEFT, padx=5)
+                    text="Store Data", 
+                    style='Custom.TButton',
+                    command=self.execute_protocol).pack(side=tk.LEFT, padx=5)
 
             self.status_label = ttk.Label(data_frame, 
                                         text="Ready", 
@@ -332,9 +345,9 @@ class ModernGUI:
             self.status_label.pack(pady=5)
 
         ttk.Button(main_frame, 
-                  text="View Blockchain Records",
-                  style='Custom.TButton',
-                  command=self.show_records).pack(pady=20)
+                text="View Blockchain Records",
+                style='Custom.TButton',
+                command=self.show_records).pack(pady=20)
 
         self.current_window.mainloop()
 
